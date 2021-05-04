@@ -77,13 +77,11 @@ func (c *DefaultHttpClient) Get(url string, token string) (resp *http.Response, 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	
-	if s != "" {
+	if token != "" {
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
 	}
 
-	resp, err := client.Do(req)
-
-	return resp
+	return client.Do(req)
 }
 
 type Releaser struct {
@@ -179,13 +177,13 @@ func (r *Releaser) UpdateIndexFile() (bool, error) {
 
 		for _, asset := range release.Assets {
 			downloadUrl, _ := url.Parse(asset.URL)
-			name := filepath.Base(downloadUrl.Path)
+			name := asset.Path
 			baseName := strings.TrimSuffix(name, filepath.Ext(name))
 			tagParts := r.splitPackageNameAndVersion(baseName)
 			packageName, packageVersion := tagParts[0], tagParts[1]
 			fmt.Printf("Found %s-%s.tgz\n", packageName, packageVersion)
 			if _, err := indexFile.Get(packageName, packageVersion); err != nil {
-				if err := r.addToIndexFile(indexFile, downloadUrl.String()); err != nil {
+				if err := r.addToIndexFile(indexFile, downloadUrl.String(), name); err != nil {
 					return false, err
 				}
 				update = true
@@ -277,8 +275,8 @@ func (r *Releaser) splitPackageNameAndVersion(pkg string) []string {
 	return []string{pkg[0:delimIndex], pkg[delimIndex+1:]}
 }
 
-func (r *Releaser) addToIndexFile(indexFile *repo.IndexFile, url string) error {
-	arch := filepath.Join(r.config.PackagePath, filepath.Base(url))
+func (r *Releaser) addToIndexFile(indexFile *repo.IndexFile, url string, name string) error {
+	arch := filepath.Join(r.config.PackagePath, name)
 
 	// extract chart metadata
 	fmt.Printf("Extracting chart metadata from %s\n", arch)
@@ -300,7 +298,7 @@ func (r *Releaser) addToIndexFile(indexFile *repo.IndexFile, url string) error {
 	s = s[:len(s)-1]
 
 	// Add to index
-	if err := indexFile.MustAdd(c.Metadata, filepath.Base(arch), strings.Join(s, "/"), hash); err != nil {
+	if err := indexFile.MustAdd(c.Metadata, filepath.Base(url), strings.Join(s, "/"), hash); err != nil {
 		return err
 	}
 	return nil

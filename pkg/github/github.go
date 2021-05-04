@@ -94,7 +94,7 @@ func (c *Client) GetRelease(ctx context.Context, tag string) (*Release, error) {
 		Assets: []*Asset{},
 	}
 	for _, ass := range release.Assets {
-		asset := &Asset{*ass.Name, *ass.BrowserDownloadURL}
+		asset := &Asset{*ass.Name, *ass.URL}
 		result.Assets = append(result.Assets, asset)
 	}
 	return result, nil
