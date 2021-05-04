@@ -53,7 +53,7 @@ type GitHub interface {
 }
 
 type HttpClient interface {
-	Get(url string) (*http.Response, error)
+	Get(url string, token string) (*http.Response, error)
 }
 
 type Git interface {
@@ -73,8 +73,17 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func (c *DefaultHttpClient) Get(url string) (resp *http.Response, err error) {
-	return http.Get(url)
+func (c *DefaultHttpClient) Get(url string, token string) (resp *http.Response, err error) {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	
+	if s != "" {
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+	}
+
+	resp, err := client.Do(req)
+
+	return resp
 }
 
 type Releaser struct {
@@ -109,7 +118,7 @@ func (r *Releaser) UpdateIndexFile() (bool, error) {
 
 	var indexFile *repo.IndexFile
 
-	resp, err := r.httpClient.Get(fmt.Sprintf("%s/index.yaml", r.config.ChartsRepo))
+	resp, err := r.httpClient.Get(fmt.Sprintf("%s/index.yaml", r.config.ChartsRepo), r.config.Token)
 	if err != nil {
 		return false, err
 	}
