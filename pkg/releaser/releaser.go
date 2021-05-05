@@ -276,6 +276,12 @@ func (r *Releaser) splitPackageNameAndVersion(pkg string) []string {
 }
 
 func (r *Releaser) addToIndexFile(indexFile *repo.IndexFile, url string, name string) error {
+	newDomain := os.Getenv("Github_Domain_Rewrite")
+
+	if newDomain != "" {
+		url = strings.Replace(url, "api.github.com", newDomain, -1)
+	}
+
 	arch := filepath.Join(r.config.PackagePath, name)
 
 	// extract chart metadata
